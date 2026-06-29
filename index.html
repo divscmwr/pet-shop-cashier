@@ -1319,20 +1319,26 @@
         const response = await fetch(url, options);
         let text = await response.text();
 
-        // Google Apps Script redirect handling
-        if (text.includes('googleusercontent.com') || text.includes('googleapis.com')) {
-          const match = text.match(/url=([^&]+)/);
+        // Debug: log response length
+        console.log('API Response length:', text.length);
+        console.log('API Response preview:', text.substring(0, 200));
+
+        // Check if it's a redirect
+        if (text.includes('googleusercontent.com') || text.includes('script.google.com')) {
+          const match = text.match(/url=([^&"]+)/);
           if (match) {
-            const redirectUrl = decodeURIComponent(match[1]);
+            const redirectUrl = decodeURIComponent(match[1]).replace('&amp;', '&');
+            console.log('Redirect URL:', redirectUrl);
             const redirectResponse = await fetch(redirectUrl);
             text = await redirectResponse.text();
+            console.log('Final Response:', text.substring(0, 200));
           }
         }
 
         return JSON.parse(text);
       } catch (error) {
         console.error('API Error:', error);
-        return { success: false, message: 'Terjadi kesalahan koneksi' };
+        return { success: false, message: 'Gagal koneksi: ' + error.message };
       }
     }
 
