@@ -1317,11 +1317,18 @@
         }
 
         const response = await fetch(url, options);
+
+        // Handle redirect from Google Apps Script
+        if (response.redirected) {
+          const redirectResponse = await fetch(response.url);
+          return await redirectResponse.json();
+        }
+
         const result = await response.json();
         return result;
       } catch (error) {
         console.error('API Error:', error);
-        return { success: false, message: 'Terjadi kesalahan koneksi' };
+        return { success: false, message: 'Terjadi kesalahan koneksi: ' + error.message };
       }
     }
 
@@ -1398,11 +1405,19 @@
 
     // Products
     async function loadProducts() {
-      const result = await apiCall('getProducts');
-      if (result.success) {
-        products = result.data;
-        renderProductsTable();
-        renderProductList();
+      try {
+        const result = await apiCall('getProducts');
+        if (result.success) {
+          products = result.data;
+          renderProductsTable();
+          renderProductList();
+        } else {
+          console.error('Failed to load products:', result.message);
+          showToast('Gagal memuat produk', 'error');
+        }
+      } catch (error) {
+        console.error('Error loading products:', error);
+        showToast('Gagal memuat produk', 'error');
       }
     }
 
