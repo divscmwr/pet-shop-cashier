@@ -1305,40 +1305,51 @@
     // API Functions
     async function apiCall(action, method = 'GET', data = null) {
       try {
-        const url = method === 'GET' ? `${API_URL}?action=${action}` : API_URL;
-        const options = {
-          method: method,
-          mode: 'cors',
-        };
+        let url = API_URL + '?action=' + action;
 
-        if (method === 'POST' && data) {
-          options.headers = { 'Content-Type': 'application/json' };
-          options.body = JSON.stringify(data);
+        // Add data as query parameters for reliability
+        if (data) {
+          if (data.name) url += '&name=' + encodeURIComponent(data.name);
+          if (data.category) url += '&category=' + encodeURIComponent(data.category);
+          if (data.price) url += '&price=' + encodeURIComponent(data.price);
+          if (data.stock) url += '&stock=' + encodeURIComponent(data.stock);
+          if (data.id) url += '&id=' + encodeURIComponent(data.id);
+          if (data.items) url += '&items=' + encodeURIComponent(data.items);
+          if (data.subtotal) url += '&subtotal=' + encodeURIComponent(data.subtotal);
+          if (data.discount) url += '&discount=' + encodeURIComponent(data.discount);
+          if (data.total) url += '&total=' + encodeURIComponent(data.total);
+          if (data.paymentMethod) url += '&paymentMethod=' + encodeURIComponent(data.paymentMethod);
         }
 
-        const response = await fetch(url, options);
+        console.log('API URL:', url);
+
+        const response = await fetch(url, {
+          method: 'GET',
+          mode: 'cors'
+        });
+
         let text = await response.text();
 
-        // Debug: log response length
-        console.log('API Response length:', text.length);
-        console.log('API Response preview:', text.substring(0, 200));
-
-        // Check if it's a redirect
-        if (text.includes('googleusercontent.com') || text.includes('script.google.com')) {
+        // Handle redirect
+        if (text.includes('googleusercontent.com')) {
           const match = text.match(/url=([^&"]+)/);
           if (match) {
-            const redirectUrl = decodeURIComponent(match[1]).replace('&amp;', '&');
+            const redirectUrl = decodeURIComponent(match[1]).replace(/&amp;/g, '&');
             console.log('Redirect URL:', redirectUrl);
             const redirectResponse = await fetch(redirectUrl);
             text = await redirectResponse.text();
-            console.log('Final Response:', text.substring(0, 200));
           }
         }
 
-        return JSON.parse(text);
+        try {
+          return JSON.parse(text);
+        } catch {
+          console.log('Raw response:', text.substring(0, 500));
+          return { success: false, message: 'Invalid response' };
+        }
       } catch (error) {
         console.error('API Error:', error);
-        return { success: false, message: 'Gagal koneksi: ' + error.message };
+        return { success: false, message: 'Gagal koneksi' };
       }
     }
 
